@@ -9,7 +9,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.js"></script>
     <script src="colorbrewer.min.js"></script>
     <style>
-      svg { font-size: 14px; }
+      body {
+        font-size: 16px;
+        font-family: 'georgia';
+      }
+
+      svg {
+        font-size: 0.5rem;
+        font-weight: bold;
+      }
 
       .bubble { fill: #800; }
 
@@ -135,7 +143,7 @@
               .attr('class', 'node')
               .attr('cx', function(d) { return scales.x(d.skilled) })
               .attr('cy', function(d) { return scales.y(d.interested) })
-              .call(force.drag)
+              // .call(force.drag)
 
           node.append('title')
             .text(function(d) { return d.name })
@@ -146,8 +154,6 @@
               .attr('class', 'label')
               .text(function(d) { return d.name })
               .attr('text-anchor', 'middle')
-              .attr('font-family', 'sans-serif')
-              .attr('font-size', '10px')
               .attr('fill', '#000')
               .attr('x', function(d) { return scales.x(d.skilled) })
               .attr('y', function(d) { return scales.y(d.interested) })
@@ -159,12 +165,10 @@
               .text(function(d) { return d.skilled + ' - ' + d.interested })
               .attr('text-anchor', 'middle')
               .attr('dy', 10)
-              .attr('font-family', 'sans-serif')
-              .attr('font-size', '10px')
               .attr('fill', '#000')
               .attr('x', function(d) { return scales.x(d.skilled) })
               .attr('y', function(d) { return scales.y(d.interested) })
-
+          //
           // force.on('tick', function() {
           //   node.attr('cx', function(d) { return d.x; })
           //       .attr('cy', function(d) { return d.y; })
@@ -201,9 +205,9 @@
 
           var color = d3.scale.quantize()
             .domain(d3.extent(data, function(d) { return d.diff } ))
-            .range(colorbrewer.RdBu[9])
+            // .range(colorbrewer.RdBu[9])
             // .range(colorbrewer.Spectral[9])
-            // .range(colorbrewer.RdYlBu[9])
+            .range(colorbrewer.RdYlBu[9])
 
           return {
             x: x,
