@@ -10,16 +10,14 @@
     <style>
       svg { font-size: 14px; }
 
-      .foreground path {
-        fill: none;
-        stroke: #800;
-        stroke-width: 1.5px;
-      }
+      .bubble { fill: #800; }
+
+      .axis { font: 10px sans-serif; }
 
       .axis line,
       .axis path {
         fill: none;
-        /*stroke: #000;*/
+        stroke: #000;
         shape-rendering: crispEdges;
       }
     </style>
@@ -201,15 +199,15 @@
   </head>
   <body>
     <div id="slope-graph"></div>
+    <div id="bubbles"></div>
     <script>
-      var SlopeGraph = (function() {
+      var Bubbles = (function() {
         var margin = {top: 20, right: 20, bottom: 30, left: 40}
-          , width  = 400
-          , height = 1200
-
-        var times = ['then', 'now']
+          , width  = 960
+          , height = 500
 
         var svg;
+        var force;
 
         function create(el, data) {
           width  = width - margin.left - margin.right
@@ -222,82 +220,144 @@
             .append('g')
               .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
 
+          force = d3.layout.force()
+            .charge(-100)
+            .linkDistance(20)
+            .size([width, height])
+
           update( data )
         }
 
         function update(data) {
           var cleanData = _munge(data)
           var scales = _scales(cleanData)
-          _drawLines(scales, cleanData)
-          _drawAxis(scales, cleanData)
-          _drawLabels(scales, cleanData)
+
+          force
+            .nodes(cleanData)
+            .start()
+
+          var node = svg.selectAll('.node')
+              .data(cleanData)
+            .enter().append('circle')
+              .attr('r', function(d) { return scales.r(d.combo) })
+              .attr('fill', function(d) { return scales.color(d.diff) })
+              .attr('class', 'node')
+              .call(force.drag)
+
+          node.append('title')
+            .text(function(d) { return d.name })
+
+          var text = svg.selectAll('.label')
+              .data(cleanData)
+            .enter().append('text')
+              .attr('class', 'label')
+              .text(function(d) { return d.name })
+              .attr('text-anchor', 'middle')
+              .attr('font-family', 'sans-serif')
+              .attr('font-size', '10px')
+              .attr('fill', '#000')
+
+          var counts = svg.selectAll('.count')
+              .data(cleanData)
+            .enter().append('text')
+              .attr('class', 'count')
+              .text(function(d) { return d.skilled + ' - ' + d.interested })
+              .attr('text-anchor', 'middle')
+              .attr('dy', 10)
+              .attr('font-family', 'sans-serif')
+              .attr('font-size', '10px')
+              .attr('fill', '#000')
+
+          // var text = svg.selectAll('.node')
+          //     .data(cleanData)
+          //   .enter().append('circle')
+          //     .attr('class', 'node')
+          //     .attr('r', function(d) { return scales.r(d.combo) })
+          //     .attr('fill', function(d) { return scales.color(d.diff) })
+          //     .call(force.drag)
+          //
+          //   .text(function(d) { return d.name; })
+          //   .attr('x', function(d) { return d.x })
+          //   .attr('y', function(d) { return d.y })
+          //   .attr('font-family', 'sans-serif')
+          //   .attr('font-size', '20px')
+          //   .attr('fill', '#000')
+
+          force.on('tick', function() {
+            node.attr('cx', function(d) { return d.x; })
+                .attr('cy', function(d) { return d.y; })
+
+            text.attr('x', function(d) { return d.x })
+                .attr('y', function(d) { return d.y })
+
+            counts.attr('x', function(d) { return d.x })
+                  .attr('y', function(d) { return d.y })
+          })
+
+          // _drawAxis(scales, cleanData)
+          // _drawCircles(scales, cleanData)
         }
 
         function _munge(data) {
-          return data.filter(function(item) { return item.now.skilled && item.then.skilled })
+          // Do some data manipulation
+          data.forEach(function(item) {
+            item.diff = item.interested - item.skilled
+            item.combo = item.interested + item.skilled
+          })
+
+          return data;
         }
 
         function _scales(data) {
-          var x = d3.scale.ordinal()
-            .domain(times)
-            .rangePoints([0, width])
+          var x = d3.scale.linear()
+            .domain(d3.extent(data, function(d) { return d.diff } ))
+            .range([0, width])
 
-          var y = times.reduce(function(scales, time) {
-            scales[time] = d3.scale.linear()
-              .domain( d3.extent(data, function(d) { return d[time].skilled } ))
-              .range([height, 0])
+          var y = d3.scale.linear()
+            .domain(d3.extent(data, function(d) { return d.combo } ))
+            .range([height, 0])
 
-            return scales
-          }, {})
+          var r = d3.scale.linear()
+            .domain(d3.extent(data, function(d) { return d.combo } ))
+            .range([4, 40])
 
           return {
             x: x,
-            y: y
+            y: y,
+            r: r,
+            color: d3.scale.category10()
           }
         }
 
         function _drawAxis(scales, data) {
-          var g = svg.selectAll('.time')
-              .data(times)
-            .enter().append('g')
-              .attr('class', 'time')
-              .attr('transform', function(d) { return 'translate(' + scales.x(d) + ')' })
+          var xAxis = d3.svg.axis()
+            .scale(scales.x)
+            .orient('bottom')
 
-          var axis = d3.svg.axis()
+          var yAxis = d3.svg.axis()
             .scale(scales.y)
             .orient('left')
 
-          g.append('g')
-              .attr('class', 'axis')
-              .each(function(d) { d3.select(this).call(axis.scale(scales.y[d])) })
-            .append('text')
-              .attr('text-anchor', 'middle')
-              .attr('y', -9)
-              .text(String)
+          svg.append('g')
+            .attr('class', 'x axis')
+            .attr('transform', 'translate(0,' + height + ')')
+            .call(xAxis)
         }
 
-        function _drawLines(scales, data) {
-          var line = d3.svg.line()
-
-          console.log(data);
-
-          var path = svg.append('g')
-              .attr('class', 'foreground')
-            .selectAll('path')
+        function _drawCircles(scales, data) {
+          svg.selectAll('.bubble')
               .data(data)
-            .enter().append('path')
-              .attr('d', path)
-              .attr('class', function(d) { return d.name })
-
-          function path(d) {
-            return line(times.map(function(t) {
-              return [scales.x(t), scales.y[t](d[t].skilled)]
-            }))
-          }
-        }
-
-        function _drawLabels(scales, data) {
-          var labels = svg.append('text')
+            .enter().append('circle')
+              .attr('class', 'bubble')
+              .attr('cx', function(d) { return scales.x(d.diff) })
+              .attr('cy', function(d) { return scales.y(d.combo) })
+              .attr('r', function(d) { return scales.r(d.combo) })
+            .append('text')
+              .text(function(d) { return d.name })
+              .attr('x', function(d) { return scales.x(d.diff) })
+              .attr('y', function(d) { return scales.y(d.combo) })
+              .attr('font-size', '12px')
+              .attr('fill', '#000')
         }
 
         return {
@@ -305,23 +365,8 @@
           update: update
         }
       })();
-      //
-      // var combined = {}
-      //
-      // NEW_SKILLS.forEach(function(item) {
-      //   combined[item.name] = combined[item.name] ? combined[item.name] : {}
-      //   combined[item.name].skilledNow = item.skilled
-      //   combined[item.name].interestedNow = item.interested
-      // })
-      // OLD_SKILLS.forEach(function(item) {
-      //   combined[item.name] = combined[item.name] ? combined[item.name] : {}
-      //   combined[item.name].skilledThen    = item.skilled
-      //   combined[item.name].interestedThen = item.interested
-      // })
 
-      // combined = Object.keys(combined).map(function(name) { return _.merge({name: name}, combined[name])})
-
-      SlopeGraph.create("#slope-graph", COMBINED )
+      Bubbles.create('#bubbles', NEW_SKILLS)
     </script>
   </body>
 </html>
