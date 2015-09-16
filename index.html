@@ -5,13 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=Edge">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.js"></script>
     <style>
-
       body {
-        font-family: georgia;
+        font-family: "proxima-nova", sans-serif;
         font-size: 16px;
+        background-color: #eee;
       }
 
       svg {
@@ -19,122 +17,237 @@
         font-weight: 800;
       }
 
-      path {
-        fill: none;
-        stroke: #a7a7a7;
-        stroke-width: 1px;
+      .name {
+        font-size: 0.9rem;
+        fill: #333;
+      }
+
+      .skill { fill: #4e9599; }
+      .interest { fill: #b62e56; }
+
+      .skill-historical { fill: rgba(14, 67, 70, 1); }
+
+      .interest-historical { fill: rgba(101, 12, 38, 1); }
+
+      .legend {
+        font-size: 4rem;
+        text-shadow: 2px 2px 4px #999;
+      }
+
+      .title {
+        font-size: 5rem;
+        fill: #333;
       }
 
       .axis line,
       .axis path {
         fill: none;
+        stroke: none;
         shape-rendering: crispEdges;
       }
 
-      .slope-graph {
-        display: inline-block;
+      .axis text {
+        font-family: 1rem;
+        text-anchor: middle !important;
+      }
+
+      .label {
+        fill: #868686;
+        font-weight: 500;
+      }
+
+      #bullets {
+        width: 960px;
+        margin: 0 auto;
       }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.js"></script>
+    <script src="https://use.typekit.net/rmr3fcx.js"></script>
+    <script>try{Typekit.load({ async: true });}catch(e){}</script>
     <script>
-      var COMBINED = [
-        {"name":"Java 8","then":{},"now":{"skilled":0,"interested":1}}
-      , {"name":"App Deployment","then":{"skilled":2,"interested":2},"now":{"skilled":3,"interested":2}},{"name":"Sales","then":{"skilled":2,"interested":0},"now":{"skilled":2,"interested":2}},{"name":"Agile Process","then":{"skilled":7,"interested":3},"now":{"skilled":4,"interested":0}},{"name":"Public Speaking","then":{"skilled":2,"interested":1},"now":{"skilled":4,"interested":4}},{"name":"Brainstorming","then":{},"now":{"skilled":1,"interested":1}},{"name":"Information Architecture","then":{},"now":{"skilled":1,"interested":1}},{"name":"Javascript","then":{},"now":{"skilled":5,"interested":1}},{"name":"Copywriting","then":{"skilled":0,"interested":0},"now":{"skilled":0,"interested":0}},{"name":"Visual Design","then":{"skilled":3,"interested":5},"now":{"skilled":0,"interested":2}},{"name":"HTML + CSS","then":{},"now":{"skilled":4,"interested":0}},{"name":"Interaction Design","then":{"skilled":1,"interested":6},"now":{"skilled":0,"interested":1}},{"name":"Client / Project Management","then":{},"now":{"skilled":2,"interested":2}},{"name":"NoSQL Databases","then":{"skilled":2,"interested":8},"now":{"skilled":1,"interested":1}},{"name":"Prototyping","then":{"skilled":2,"interested":6},"now":{"skilled":3,"interested":1}},{"name":"IT","then":{"skilled":5,"interested":1},"now":{"skilled":1,"interested":1}},{"name":"Objective C","then":{"skilled":2,"interested":2},"now":{"skilled":1,"interested":0}},{"name":"Search","then":{"skilled":4,"interested":0},"now":{"skilled":0,"interested":0}},{"name":"Networking","then":{"skilled":0,"interested":0},"now":{"skilled":2,"interested":2}},{"name":"Quality Assurance","then":{"skilled":1,"interested":0},"now":{"skilled":1,"interested":0}},{"name":"Performance Tuning","then":{"skilled":2,"interested":3},"now":{"skilled":0,"interested":1}},{"name":"User Testing","then":{"skilled":2,"interested":1},"now":{"skilled":2,"interested":1}},{"name":"Security","then":{"skilled":0,"interested":4},"now":{"skilled":0,"interested":1}},{"name":"TDD","then":{"skilled":2,"interested":3},"now":{"skilled":2,"interested":0}},{"name":"PR","then":{"skilled":0,"interested":2},"now":{"skilled":0,"interested":0}},{"name":"Functional Programming","then":{"skilled":3,"interested":6},"now":{"skilled":2,"interested":3}},{"name":"Coaching/ Bootstrapping","then":{},"now":{"skilled":0,"interested":2}},{"name":"Blogging","then":{"skilled":0,"interested":3},"now":{"skilled":1,"interested":0}},{"name":"SQL Databases","then":{"skilled":5,"interested":0},"now":{"skilled":3,"interested":0}},{"name":"Ruby","then":{"skilled":8,"interested":6},"now":{"skilled":4,"interested":0}},{"name":"Brand Development","then":{"skilled":1,"interested":3},"now":{"skilled":0,"interested":0}},{"name":"Java","then":{"skilled":4,"interested":0},"now":{"skilled":2,"interested":0}},{"name":"Field Research and User Empathy","then":{},"now":{"skilled":0,"interested":1}},{"name":"Jumping","then":{"skilled":0,"interested":1},"now":{"skilled":1,"interested":0}},{"name":"Coffee","then":{"skilled":3,"interested":3},"now":{"skilled":4,"interested":0}},{"name":"Mentoring","then":{"skilled":3,"interested":4},"now":{"skilled":2,"interested":2}},{"name":"Growth strategy","then":{},"now":{"skilled":0,"interested":2}},{"name":"Experiement-driven product development","then":{},"now":{"skilled":0,"interested":1}},{"name":"Social media marketing","then":{},"now":{"skilled":0,"interested":1}},{"name":"Product ideation / definition","then":{},"now":{"skilled":1,"interested":2}},{"name":"Scala","then":{},"now":{"skilled":1,"interested":2}},{"name":"Go","then":{},"now":{"skilled":2,"interested":1}},{"name":"Haskell","then":{},"now":{"skilled":2,"interested":2}},{"name":"Data Strategy &amp; Analytics","then":{},"now":{"skilled":0,"interested":1}},{"name":"Product Management","then":{},"now":{"skilled":1,"interested":2}},{"name":"Business strategy","then":{},"now":{"skilled":0,"interested":2}},{"name":"React","then":{},"now":{"skilled":1,"interested":2}},{"name":"Customer Development","then":{},"now":{"skilled":0,"interested":3}},{"name":"Project Kick off","then":{},"now":{"skilled":2,"interested":1}},{"name":"Recruitment","then":{},"now":{"skilled":0,"interested":1}},{"name":"Stakeholder management","then":{},"now":{"skilled":1,"interested":1}},{"name":"Content strategy","then":{},"now":{"skilled":0,"interested":0}},{"name":"Individual Coaching","then":{},"now":{"skilled":1,"interested":0}},{"name":"Facilitation","then":{},"now":{"skilled":0,"interested":0}},{"name":"Swift","then":{},"now":{"skilled":0,"interested":1}},{"name":"Team leadership","then":{},"now":{"skilled":0,"interested":2}},{"name":"Modeling","then":{"skilled":2,"interested":1},"now":{"skilled":2,"interested":0}},{"name":"Field Research & User Empathy","then":{"skilled":1,"interested":4},"now":{}},{"name":"Brain- storming","then":{"skilled":1,"interested":6},"now":{}},{"name":"Information Arch.","then":{"skilled":2,"interested":4},"now":{}},{"name":"Client/ Project Management","then":{"skilled":5,"interested":0},"now":{}},{"name":"HTML & CSS","then":{"skilled":9,"interested":3},"now":{}},{"name":"JavaScript","then":{"skilled":9,"interested":7},"now":{}},{"name":"Coaching/ Boot- strapping","then":{"skilled":1,"interested":3},"now":{}},{"name":"Analytics","then":{"skilled":3,"interested":1},"now":{}}
-      ]
+      var COMBINED_TOPICS = [{"skilled":[3,0],"interested":[1,0],"name":"Analytics"},{"skilled":[0,0],"interested":[2,0],"name":"PR"},{"skilled":[0,1],"interested":[1,0],"name":"Jumping"},{"skilled":[0,0],"interested":[0,2],"name":"Content strategy"},{"skilled":[1,2],"interested":[0,0],"name":"Quality Assurance"},{"skilled":[3,0],"interested":[5,2],"name":"Visual Design"},{"skilled":[0,0],"interested":[0,3],"name":"Social media marketing"},{"skilled":[0,3],"interested":[0,0],"name":"Individual Coaching"},{"skilled":[0,0],"interested":[0,3],"name":"Copywriting"},{"skilled":[1,0],"interested":[3,3],"name":"Coaching/ Bootstrapping"},{"skilled":[0,1],"interested":[0,3],"name":"Scala"},{"skilled":[1,2],"interested":[3,3],"name":"Brand Development"},{"skilled":[1,4],"interested":[4,1],"name":"Field Research and User Empathy"},{"skilled":[4,4],"interested":[0,1],"name":"Search"},{"skilled":[0,3],"interested":[0,3],"name":"Java 8"},{"skilled":[0,3],"interested":[3,3],"name":"Blogging"},{"skilled":[4,6],"interested":[0,0],"name":"Java"},{"skilled":[5,4],"interested":[1,3],"name":"IT"},{"skilled":[2,5],"interested":[1,2],"name":"Modeling"},{"skilled":[0,5],"interested":[0,2],"name":"Stakeholder management"},{"skilled":[0,4],"interested":[0,3],"name":"Recruitment"},{"skilled":[0,2],"interested":[0,5],"name":"Data Strategy &amp; Analytics"},{"skilled":[0,3],"interested":[0,4],"name":"Go"},{"skilled":[0,3],"interested":[0,4],"name":"Networking"},{"skilled":[2,6],"interested":[4,1],"name":"Information Architecture"},{"skilled":[0,1],"interested":[0,7],"name":"Experiement-driven product development"},{"skilled":[2,4],"interested":[8,4],"name":"NoSQL Databases"},{"skilled":[0,3],"interested":[0,5],"name":"Haskell"},{"skilled":[2,6],"interested":[0,2],"name":"Sales"},{"skilled":[1,7],"interested":[6,1],"name":"Brainstorming"},{"skilled":[0,3],"interested":[0,5],"name":"Product Management"},{"skilled":[0,0],"interested":[0,8],"name":"Growth strategy"},{"skilled":[2,6],"interested":[2,2],"name":"Objective C"},{"skilled":[0,1],"interested":[4,8],"name":"Security"},{"skilled":[0,7],"interested":[0,2],"name":"Facilitation"},{"skilled":[1,5],"interested":[6,5],"name":"Interaction Design"},{"skilled":[0,6],"interested":[0,4],"name":"Project Kick off"},{"skilled":[0,6],"interested":[0,4],"name":"Customer Development"},{"skilled":[2,8],"interested":[2,3],"name":"App Deployment"},{"skilled":[2,10],"interested":[3,1],"name":"TDD"},{"skilled":[0,3],"interested":[0,9],"name":"Business strategy"},{"skilled":[0,8],"interested":[0,5],"name":"Team leadership"},{"skilled":[7,13],"interested":[3,0],"name":"Agile Process"},{"skilled":[0,4],"interested":[0,9],"name":"Swift"},{"skilled":[2,8],"interested":[1,5],"name":"User Testing"},{"skilled":[2,9],"interested":[6,4],"name":"Prototyping"},{"skilled":[0,6],"interested":[0,8],"name":"React"},{"skilled":[3,10],"interested":[3,4],"name":"Coffee"},{"skilled":[0,8],"interested":[0,6],"name":"Product ideation / definition"},{"skilled":[3,10],"interested":[4,5],"name":"Mentoring"},{"skilled":[5,10],"interested":[0,6],"name":"Client / Project Management"},{"skilled":[5,15],"interested":[0,2],"name":"SQL Databases"},{"skilled":[9,14],"interested":[7,3],"name":"JavaScript"},{"skilled":[3,5],"interested":[6,13],"name":"Functional Programming"},{"skilled":[9,12],"interested":[3,6],"name":"HTML + CSS"},{"skilled":[2,8],"interested":[3,10],"name":"Performance Tuning"},{"skilled":[8,17],"interested":[6,1],"name":"Ruby"},{"skilled":[2,10],"interested":[1,10],"name":"Public Speaking"}]
     </script>
   </head>
   <body>
-    <div id="skills-graph" class="slope-graph">
-      <h1>Skilled</h1>
-    </div>
-    <div id="interests-graph" class="slope-graph">
-      <h1>Interested</h1>
-    </div>
+    <div id="bullets"></div>
     <script>
-      var SlopeGraph = (function() {
-        var margin = {top: 20, right: 20, bottom: 30, left: 40}
-          , width  = 400
-          , height = 1200
+      var Bullets = (function() {
+        var margin = {top: 200, right: 20, bottom: 30, left: 40}
+          , width  = 960
+          , height = 5000
 
         var svg;
 
-        function create(el, data) {
+        function create(selector, data) {
           width  = width - margin.left - margin.right
           height = height - margin.top - margin.bottom
 
-          svg = d3.select(el).append('svg')
+          svg = d3.select(selector).append('svg')
               .attr('class', 'd3')
               .attr('width', width + margin.right + margin.left)
               .attr('height', height + margin.top + margin.bottom)
             .append('g')
               .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
 
-          update( data )
+          update(data)
         }
 
         function update(data) {
           var cleanData = _munge(data)
           var scales = _scales(cleanData)
-          _drawLines(scales, cleanData)
-          _drawLabels(scales, cleanData)
+
+          _drawNames(scales, cleanData)
+          _drawBars(scales, cleanData)
+          _drawLegend(scales, cleanData)
         }
 
         function _munge(data) {
-          return data
+          data.sort(function(a, b) {
+            var aDiff = a.interested[1] + a.skilled[1]
+              , bDiff = b.interested[1] + b.skilled[1]
+
+            return aDiff - bDiff
+          })
+
+          return data;
         }
 
         function _scales(data) {
-          var x = d3.scale.ordinal()
-            .domain([0, 1])
-            .rangePoints([0, width])
-
-          var y = d3.scale.linear()
+          var skill = d3.scale.linear()
             .domain([
-              d3.min(data, function(d) { return d3.min(d.points) }),
-              d3.max(data, function(d) { return d3.max(d.points) })
+              d3.min(data, function(d) { return d3.min(d.skilled) }),
+              d3.max(data, function(d) { return d3.max(d.skilled) } )
             ])
-            .range([height, 0])
+            .range([width/2, width])
+
+          var interest = d3.scale.linear()
+            .domain([
+              d3.min(data, function(d) { return d3.min(d.interested) }),
+              d3.max(data, function(d) { return d3.max(d.interested) } )
+            ])
+            .range([width/2, 0])
+
+          var y = d3.scale.ordinal()
+            .domain( data.map(function(d) { return d.name }) )
+            .rangeRoundBands([height, 0], 0.6)
 
           return {
-            x: x,
+            skill: skill,
+            interest: interest,
             y: y
           }
         }
 
-        function _drawLines(scales, data) {
-          var line = d3.svg.line()
-            .x(function(d, i) { return scales.x(i) })
-            .y(function(d)    { return scales.y(d) })
+        function _drawLegend(scales, data) {
+          svg.append('text')
+            .attr('class', 'title legend')
+            .attr('x', width/2)
+            .attr('dy', -120)
+            .attr('text-anchor', 'middle')
+            .text('C5 Interest Map')
+// →←
+          svg.append('text')
+            .attr('class', 'interest legend')
+            .attr('x', width/2)
+            .attr('dy', -20)
+            .attr('dx', -5)
+            .attr('text-anchor', 'end')
+            .text('INTEREST')
 
-          var topic = svg.selectAll('.topic')
-              .data(data)
-            .enter().append('g')
-              .attr('class', 'topic')
-
-          topic.append('path')
-            .attr('class', 'line')
-            .attr('d', function(d) { return line(d.points) })
-
-          topic.append('text')
-            .attr('transform', function(d) { return 'translate(0,' + scales.y(d.points[0]) + ')' })
-            .attr('x', 3)
-            .attr('dy', function(d, i) { return (0.35 + (i % 4)) + 'em' })
-            .text(function(d) { return d.name })
+          svg.append('text')
+            .attr('class', 'skill legend')
+            .attr('x', width/2)
+            .attr('dy', -20)
+            .attr('dx', 5)
+            .attr('text-anchor', 'start')
+            .text('SKILL')
         }
 
-        function _drawLabels(scales, data) {
-          svg.selectAll('.left-label')
+        function _drawNames(scales, data) {
+          svg.selectAll('.name')
               .data(data)
             .enter().append('text')
-              .attr('class', 'left-label')
-              .attr('transform', function(d) { return 'translate(0,' + scales.y(d.points[0]) + ')' })
-              .text(function(d) { return d.points[0] })
+              .attr('class', 'name')
+              .attr('y', function(d) { return scales.y(d.name) })
+              .attr('dy', -4)
+              .attr('x', function(d) { return width/2 })
+              .attr('text-anchor', 'middle')
+              .text(function(d) { return d.name })
+        }
 
-          svg.selectAll('.right-label')
+        function _drawBars(scales, data) {
+          svg.selectAll('.skill')
+              .data(data)
+            .enter().append('rect')
+              .attr('class', 'skill')
+              .attr('x', function(d) { return width/2 })
+              .attr('y', function(d) { return scales.y(d.name) + 3 })
+              .attr('width', function(d) { return scales.skill(d.skilled[1]) - (width/2) })
+              .attr('height', scales.y.rangeBand())
+
+          svg.selectAll('.skill-historical')
+              .data(data)
+            .enter().append('rect')
+              .attr('class', 'skill-historical')
+              .attr('x', function(d) { return scales.skill(d.skilled[0]) })
+              .attr('y', function(d) { return scales.y(d.name) })
+              .attr('width', 3)
+              .attr('height', scales.y.rangeBand() + 6)
+
+          svg.selectAll('.interest')
+              .data(data)
+            .enter().append('rect')
+              .attr('class', 'interest')
+              .attr('x', function(d) { return scales.interest(d.interested[1]) })
+              .attr('y', function(d) { return scales.y(d.name) + 3 })
+              .attr('width', function(d) { return (width/2) - scales.interest(d.interested[1]) })
+              .attr('height', scales.y.rangeBand())
+
+          svg.selectAll('.interest-historical')
+              .data(data)
+            .enter().append('rect')
+              .attr('class', 'interest-historical')
+              .attr('x', function(d) { return scales.interest(d.interested[0]) })
+              .attr('y', function(d) { return scales.y(d.name) })
+              .attr('width', 3)
+              .attr('height', scales.y.rangeBand() + 6)
+
+          svg.selectAll('.skill.label')
               .data(data)
             .enter().append('text')
-              .attr('class', 'right-label')
-              .attr('transform', function(d, i) { return 'translate(' + scales.x(1) + ',' + scales.y(d.points[1]) + ')' })
-              .text(function(d) { return d.points[1] })
+              .attr('class', 'skill label')
+              .attr('x', function(d) { return scales.skill(d.skilled[1]) })
+              .attr('y', function(d) { return scales.y(d.name) + scales.y.rangeBand() + 16 })
+              .attr('dx', -2)
+              .text(function(d) { return d.skilled[1] })
+
+          svg.selectAll('.interest.label')
+              .data(data)
+            .enter().append('text')
+              .attr('class', 'interest label')
+              .attr('x', function(d) { return scales.interest(d.interested[1]) })
+              .attr('y', function(d) { return scales.y(d.name) + scales.y.rangeBand() + 16 })
+              .attr('dx', -2)
+              .text(function(d) { return d.interested[1] })
+
+          svg.selectAll('.skill.label.historical')
+              .data(data)
+            .enter().append('text')
+              .attr('class', 'skill label historical')
+              .attr('x', function(d) { return scales.skill(d.skilled[0]) })
+              .attr('y', function(d) { return scales.y(d.name) + scales.y.rangeBand() + 16 })
+              .attr('dx', -2)
+              .text(function(d) { return d.skilled[0] })
+
+          svg.selectAll('.interest.label.historical')
+              .data(data)
+            .enter().append('text')
+              .attr('class', 'interest label historical')
+              .attr('x', function(d) { return scales.interest(d.interested[0]) })
+              .attr('y', function(d) { return scales.y(d.name) + scales.y.rangeBand() + 16 })
+              .attr('dx', -2)
+              .text(function(d) { return d.interested[0] })
         }
 
         return {
@@ -143,22 +256,7 @@
         }
       })();
 
-      var skilledData = COMBINED.map(function(item) {
-        var newItem = {}
-        newItem.name = item.name
-        newItem.points = [(item.then.skilled||0), (item.now.skilled||0)]
-        return newItem
-      })
-
-      var interestedData = COMBINED.map(function(item) {
-        var newItem = {}
-        newItem.name = item.name
-        newItem.points = [(item.then.interested||0), (item.now.interested||0)]
-        return newItem
-      })
-
-      SlopeGraph.create("#skills-graph", skilledData)
-      SlopeGraph.create("#interests-graph", interestedData)
+      Bullets.create('#bullets', COMBINED_TOPICS)
     </script>
   </body>
 </html>
