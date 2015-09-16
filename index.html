@@ -22,8 +22,15 @@
         fill: #333;
       }
 
-      .skill { fill: #4e9599; }
-      .interest { fill: #b62e56; }
+      .skill {
+        fill: #4e9599;
+        color: #4e9599;
+      }
+
+      .interest {
+        fill: #b62e56;
+        color: #b62e56;
+      }
 
       .skill-historical { fill: rgba(14, 67, 70, 1); }
 
@@ -51,6 +58,52 @@
         font-weight: 500;
       }
 
+      .topic-details {
+        text-align: center;
+        color: #ddd;
+      }
+
+      .topic-details strong {
+        display: block;
+        margin-bottom: 0.2rem;
+        color: #fff;
+      }
+
+      .d3-tip {
+        line-height: 1;
+        font-weight: bold;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        border-radius: 2px;
+      }
+
+      /* Creates a small triangle extender for the tooltip */
+      .d3-tip:after {
+        box-sizing: border-box;
+        display: inline;
+        font-size: 10px;
+        width: 100%;
+        line-height: 1;
+        color: rgba(0, 0, 0, 0.8);
+        content: "\25BC";
+        position: absolute;
+        text-align: center;
+      }
+
+      .d3-tip.n:after {
+        margin: -1px 0 0 0;
+        top: 100%;
+        left: 0;
+      }
+
+      .d3-tip.s:after {
+        content: "\25B2";
+        margin: 0 0 -3px 0;
+        bottom: 100%;
+        left: 0;
+      }
+
       #bullets {
         width: 960px;
         margin: 0 auto;
@@ -58,6 +111,7 @@
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.js"></script>
+    <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
     <script src="https://use.typekit.net/rmr3fcx.js"></script>
     <script>try{Typekit.load({ async: true });}catch(e){}</script>
     <script>
@@ -73,10 +127,23 @@
           , height = 800
 
         var svg;
+        var skillTip;
+        var interestTip;
 
         function create(selector, data) {
           width  = width - margin.left - margin.right
           height = height - margin.top - margin.bottom
+
+          skillTip = d3.tip()
+            .attr('class', 'd3-tip')
+            .offset([10, 0])
+            .direction('s')
+            .html( _tipHtml )
+
+          interestTip = d3.tip()
+            .attr('class', 'd3-tip')
+            .offset([-10, 0])
+            .html( _tipHtml )
 
           svg = d3.select(selector).append('svg')
               .attr('class', 'd3')
@@ -85,7 +152,19 @@
             .append('g')
               .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
 
+          svg.call(skillTip)
+          svg.call(interestTip)
+
           update(data)
+        }
+
+        function _tipHtml(d) {
+          return "<div class='topic-details'>"
+                    + "<strong>" + d.name + "</strong>"
+                    + "<span class='interest'>Interest: " + d.interested[1] + "</span>"
+                    + "<span> - </span>"
+                    + "<span class='skill'>Skill: " + d.skilled[1] + "</span>"
+               + "</div>"
         }
 
         function update(data) {
@@ -93,40 +172,34 @@
           var scales = _scales(cleanData)
 
           _drawAxes(scales, cleanData)
-          _drawNames(scales, cleanData)
           _drawBars(scales, cleanData)
           _drawLegend(scales, cleanData)
         }
 
         function _munge(data) {
-          data.forEach(function(d) { d.diff = d.interested[1] - d.skilled[1] })
-
           data.sort(function(a, b) {
-            // var aDiff = a.interested[1] + a.skilled[1]
-            //   , bDiff = b.interested[1] + b.skilled[1]
-            //
-            // return aDiff. - bDiff
+            var interested = a.interested[1] - b.interested[1]
 
-            return b.interested[1] - a.interested[1]
-            // return b.skilled[1] - a.skilled[1]
+            return interested === 0 ? a.skilled[1] - b.skilled[1] : interested
           })
 
           return data;
         }
 
         function _scales(data) {
+          var max = d3.max(data, function(d) {
+            var maxSkill = d3.max(d.skilled)
+              , maxInterest = d3.max(d.interested)
+
+            return d3.max([maxSkill, maxInterest])
+          })
+
           var skill = d3.scale.linear()
-            .domain([
-              d3.min(data, function(d) { return d3.min(d.skilled) }),
-              d3.max(data, function(d) { return d3.max(d.skilled) } )
-            ])
+            .domain([0, max])
             .range([height/2, height])
 
           var interest = d3.scale.linear()
-            .domain([
-              d3.min(data, function(d) { return d3.min(d.interested) }),
-              d3.max(data, function(d) { return d3.max(d.interested) } )
-            ])
+            .domain([0, max])
             .range([height/2, 0])
 
           var y = d3.scale.ordinal()
@@ -143,26 +216,10 @@
         function _drawLegend(scales, data) {
           svg.append('text')
             .attr('class', 'title legend')
-            .attr('x', width/2)
-            .attr('dy', -120)
-            .attr('text-anchor', 'middle')
-            .text('C5 Interest Map')
-
-          svg.append('text')
-            .attr('class', 'interest legend')
-            .attr('x', width/2)
-            .attr('dy', -20)
-            .attr('dx', -5)
-            .attr('text-anchor', 'end')
-            .text('INTEREST')
-
-          svg.append('text')
-            .attr('class', 'skill legend')
-            .attr('x', width/2)
-            .attr('dy', -20)
-            .attr('dx', 5)
+            .attr('dy', -80)
+            .attr('dx', -40)
             .attr('text-anchor', 'start')
-            .text('SKILL')
+            .text('C5 Interest Map')
         }
 
         function _drawAxes(scales, data) {
@@ -179,11 +236,6 @@
             .scale(scales.skill)
             .orient('left')
             .ticks(10)
-
-          // svg.append('g')
-          //   .attr('class', 'x axis')
-          //   .attr('transform', 'translate(0,' + height/2 + ')')
-          //   .call(xAxis)
 
           svg.append('g')
               .attr('class', 'interest axis')
@@ -207,18 +259,6 @@
               .text('Skill')
         }
 
-        function _drawNames(scales, data) {
-          // svg.selectAll('.name')
-          //     .data(data)
-          //   .enter().append('text')
-          //     .attr('class', 'name')
-          //     .attr('y', function(d) { return scales.y(d.name) })
-          //     .attr('dy', -4)
-          //     .attr('x', function(d) { return width/2 })
-          //     .attr('text-anchor', 'middle')
-          //     .text(function(d) { return d.name })
-        }
-
         function _drawBars(scales, data) {
           svg.selectAll('.skill')
               .data(data)
@@ -228,16 +268,9 @@
               .attr('y', function(d) { return scales.skill(0) })
               .attr('width', function(d) { return scales.y.rangeBand() })
               .attr('height', function(d) { return scales.skill(d.skilled[1]) - height/2 })
+              .on('mouseover', skillTip.show)
+              .on('mouseout', skillTip.hide)
 
-          // svg.selectAll('.skill-historical')
-          //     .data(data)
-          //   .enter().append('rect')
-          //     .attr('class', 'skill-historical')
-          //     .attr('x', function(d) { return scales.y(d.name) - 3 })
-          //     .attr('y', function(d) { return scales.skill(d.skilled[0]) })
-          //     .attr('width', scales.y.rangeBand() + 6)
-          //     .attr('height', 3)
-          //
           svg.selectAll('.interest')
               .data(data)
             .enter().append('rect')
@@ -246,15 +279,8 @@
               .attr('y', function(d) { return scales.interest(d.interested[1]) })
               .attr('width', function(d) { return scales.y.rangeBand() })
               .attr('height', function(d) { return height/2 - scales.interest(d.interested[1]) })
-          //
-          // svg.selectAll('.interest-historical')
-          //     .data(data)
-          //   .enter().append('rect')
-          //     .attr('class', 'interest-historical')
-          //     .attr('x', function(d) { return scales.y(d.name) - 3 })
-          //     .attr('y', function(d) { return scales.interest(d.interested[0]) })
-          //     .attr('width', scales.y.rangeBand() + 6)
-          //     .attr('height', 3)
+              .on('mouseover', interestTip.show)
+              .on('mouseout', interestTip.hide)
 
           // svg.selectAll('.skill.label')
           //     .data(data)
