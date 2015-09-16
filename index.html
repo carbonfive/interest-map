@@ -8,15 +8,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.js"></script>
     <script src="colorbrewer.min.js"></script>
+    <script src="https://use.typekit.net/rmr3fcx.js"></script>
+    <script>try{Typekit.load({ async: true });}catch(e){}</script>
     <style>
       body {
         font-size: 16px;
-        font-family: 'georgia';
+        font-family: "proxima-nova",sans-serif;
+        background-color: #222;
       }
 
       svg {
-        font-size: 0.5rem;
-        font-weight: bold;
+        font-size: 0.7rem;
+        /*font-weight: bold;*/
       }
 
       .bubble { fill: #800; }
@@ -120,19 +123,33 @@
               .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
 
           force = d3.layout.force()
-            .charge(-100)
-            .linkDistance(20)
+            .friction(0.9)
             .size([width, height])
 
           update( data )
+        }
+
+        function _charge(d) {
+          return -Math.pow(d.r, 2.0) / 8
         }
 
         function update(data) {
           var cleanData = _munge(data)
           var scales = _scales(cleanData)
 
+          var nodes = cleanData.map(function(item) {
+            var newItem = _.merge(item, {
+              y: scales.y(item.diff)
+            , r: scales.r(item.combo)
+            //, x: scales.x(item.diff)
+            })
+          })
+
           force
             .nodes(cleanData)
+            .gravity(-0.01)
+            .friction(0.9)
+            .charge(_charge)
             .start()
 
           var node = svg.selectAll('.node')
@@ -140,10 +157,11 @@
             .enter().append('circle')
               .attr('r', function(d) { return scales.r(d.combo) })
               .attr('fill', function(d) { return scales.color(d.diff) })
+              .attr('stroke', function(d) { return d3.rgb().darker(scales.color(d.diff)) })
               .attr('class', 'node')
               .attr('cx', function(d) { return scales.x(d.skilled) })
               .attr('cy', function(d) { return scales.y(d.interested) })
-              // .call(force.drag)
+              .call(force.drag)
 
           node.append('title')
             .text(function(d) { return d.name })
@@ -152,33 +170,43 @@
               .data(cleanData)
             .enter().append('text')
               .attr('class', 'label')
-              .text(function(d) { return d.name })
+              .text(function(d) { return d.name.length < 10 ? d.name : '' })
               .attr('text-anchor', 'middle')
               .attr('fill', '#000')
               .attr('x', function(d) { return scales.x(d.skilled) })
               .attr('y', function(d) { return scales.y(d.interested) })
 
-          var counts = svg.selectAll('.count')
-              .data(cleanData)
-            .enter().append('text')
-              .attr('class', 'count')
-              .text(function(d) { return d.skilled + ' - ' + d.interested })
-              .attr('text-anchor', 'middle')
-              .attr('dy', 10)
-              .attr('fill', '#000')
-              .attr('x', function(d) { return scales.x(d.skilled) })
-              .attr('y', function(d) { return scales.y(d.interested) })
-          //
-          // force.on('tick', function() {
-          //   node.attr('cx', function(d) { return d.x; })
-          //       .attr('cy', function(d) { return d.y; })
-          //
-          //   text.attr('x', function(d) { return d.x })
-          //       .attr('y', function(d) { return d.y })
-          //
-          //   counts.attr('x', function(d) { return d.x })
-          //         .attr('y', function(d) { return d.y })
-          // })
+          // var counts = svg.selectAll('.count')
+          //     .data(cleanData)
+          //   .enter().append('text')
+          //     .attr('class', 'count')
+          //     .text(function(d) { return d.skilled + ' - ' + d.interested })
+          //     .attr('text-anchor', 'middle')
+          //     .attr('dy', 10)
+          //     .attr('fill', '#000')
+          //     .attr('x', function(d) { return scales.x(d.skilled) })
+          //     .attr('y', function(d) { return scales.y(d.interested) })
+
+           force.on('tick', function(e) {
+             node.each( _moveTowardsCenter(e.alpha) )
+                 .attr('cx', function(d) { return d.x; })
+                 .attr('cy', function(d) { return d.y; })
+
+             text.attr('x', function(d) { return d.x })
+                 .attr('y', function(d) { return d.y })
+             //
+            //  counts.attr('x', function(d) { return d.x })
+            //        .attr('y', function(d) { return d.y })
+           })
+        }
+
+        function _moveTowardsCenter(alpha) {
+          return function(d) {
+            var target = {x: width / 2, y: height / 2}
+            var damper = 0.1
+            d.x = d.x + (target.x - d.x) * (damper+0.02) * alpha
+            d.y = d.y + (target.y - d.y) * (damper+0.02) * alpha
+          }
         }
 
         function _munge(data) {
@@ -192,22 +220,20 @@
 
         function _scales(data) {
           var x = d3.scale.linear()
-            .domain(d3.extent(data, function(d) { return d.skilled } ))
+            .domain(d3.extent(data, function(d) { return d.diff } ))
             .range([0, width])
 
           var y = d3.scale.linear()
-            .domain(d3.extent(data, function(d) { return d.interested } ))
+            .domain(d3.extent(data, function(d) { return d.diff } ))
             .range([height, 0])
 
           var r = d3.scale.linear()
             .domain(d3.extent(data, function(d) { return d.combo } ))
-            .range([4, 40])
+            .range([10, 80])
 
           var color = d3.scale.quantize()
             .domain(d3.extent(data, function(d) { return d.diff } ))
-            // .range(colorbrewer.RdBu[9])
-            // .range(colorbrewer.Spectral[9])
-            .range(colorbrewer.RdYlBu[9])
+            .range(colorbrewer.RdBu[9])
 
           return {
             x: x,
