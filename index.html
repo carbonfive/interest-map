@@ -46,11 +46,6 @@
         shape-rendering: crispEdges;
       }
 
-      .axis text {
-        font-family: 1rem;
-        text-anchor: middle !important;
-      }
-
       .label {
         fill: #868686;
         font-weight: 500;
@@ -75,7 +70,7 @@
       var Bullets = (function() {
         var margin = {top: 200, right: 20, bottom: 30, left: 40}
           , width  = 960
-          , height = 5000
+          , height = 800
 
         var svg;
 
@@ -97,17 +92,23 @@
           var cleanData = _munge(data)
           var scales = _scales(cleanData)
 
+          _drawAxes(scales, cleanData)
           _drawNames(scales, cleanData)
           _drawBars(scales, cleanData)
           _drawLegend(scales, cleanData)
         }
 
         function _munge(data) {
-          data.sort(function(a, b) {
-            var aDiff = a.interested[1] + a.skilled[1]
-              , bDiff = b.interested[1] + b.skilled[1]
+          data.forEach(function(d) { d.diff = d.interested[1] - d.skilled[1] })
 
-            return aDiff - bDiff
+          data.sort(function(a, b) {
+            // var aDiff = a.interested[1] + a.skilled[1]
+            //   , bDiff = b.interested[1] + b.skilled[1]
+            //
+            // return aDiff. - bDiff
+
+            return b.interested[1] - a.interested[1]
+            // return b.skilled[1] - a.skilled[1]
           })
 
           return data;
@@ -119,18 +120,18 @@
               d3.min(data, function(d) { return d3.min(d.skilled) }),
               d3.max(data, function(d) { return d3.max(d.skilled) } )
             ])
-            .range([width/2, width])
+            .range([height/2, height])
 
           var interest = d3.scale.linear()
             .domain([
               d3.min(data, function(d) { return d3.min(d.interested) }),
               d3.max(data, function(d) { return d3.max(d.interested) } )
             ])
-            .range([width/2, 0])
+            .range([height/2, 0])
 
           var y = d3.scale.ordinal()
             .domain( data.map(function(d) { return d.name }) )
-            .rangeRoundBands([height, 0], 0.6)
+            .rangeRoundBands([0, width], 0.1)
 
           return {
             skill: skill,
@@ -146,7 +147,7 @@
             .attr('dy', -120)
             .attr('text-anchor', 'middle')
             .text('C5 Interest Map')
-// →←
+
           svg.append('text')
             .attr('class', 'interest legend')
             .attr('x', width/2)
@@ -164,16 +165,58 @@
             .text('SKILL')
         }
 
+        function _drawAxes(scales, data) {
+          var xAxis = d3.svg.axis()
+            .scale(scales.y)
+            .orient('bottom')
+
+          var interestAxis = d3.svg.axis()
+            .scale(scales.interest)
+            .orient('left')
+            .ticks(10)
+
+          var skillAxis = d3.svg.axis()
+            .scale(scales.skill)
+            .orient('left')
+            .ticks(10)
+
+          // svg.append('g')
+          //   .attr('class', 'x axis')
+          //   .attr('transform', 'translate(0,' + height/2 + ')')
+          //   .call(xAxis)
+
+          svg.append('g')
+              .attr('class', 'interest axis')
+              .call(interestAxis)
+            .append('text')
+              .attr('transform', 'rotate(-90)')
+              .attr('y', 6)
+              .attr('dy', '.71em')
+              .style('text-anchor', 'end')
+              .text('Interest')
+
+          svg.append('g')
+              .attr('class', 'skill axis')
+              .call(skillAxis)
+            .append('text')
+              .attr('transform', 'rotate(-90)')
+              .attr('y', 6)
+              .attr('dy', '.71em')
+              .attr('x', 40 - height)
+              .style('text-anchor', 'end')
+              .text('Skill')
+        }
+
         function _drawNames(scales, data) {
-          svg.selectAll('.name')
-              .data(data)
-            .enter().append('text')
-              .attr('class', 'name')
-              .attr('y', function(d) { return scales.y(d.name) })
-              .attr('dy', -4)
-              .attr('x', function(d) { return width/2 })
-              .attr('text-anchor', 'middle')
-              .text(function(d) { return d.name })
+          // svg.selectAll('.name')
+          //     .data(data)
+          //   .enter().append('text')
+          //     .attr('class', 'name')
+          //     .attr('y', function(d) { return scales.y(d.name) })
+          //     .attr('dy', -4)
+          //     .attr('x', function(d) { return width/2 })
+          //     .attr('text-anchor', 'middle')
+          //     .text(function(d) { return d.name })
         }
 
         function _drawBars(scales, data) {
@@ -181,73 +224,73 @@
               .data(data)
             .enter().append('rect')
               .attr('class', 'skill')
-              .attr('x', function(d) { return width/2 })
-              .attr('y', function(d) { return scales.y(d.name) + 3 })
-              .attr('width', function(d) { return scales.skill(d.skilled[1]) - (width/2) })
-              .attr('height', scales.y.rangeBand())
+              .attr('x', function(d) { return scales.y(d.name) })
+              .attr('y', function(d) { return scales.skill(0) })
+              .attr('width', function(d) { return scales.y.rangeBand() })
+              .attr('height', function(d) { return scales.skill(d.skilled[1]) - height/2 })
 
-          svg.selectAll('.skill-historical')
-              .data(data)
-            .enter().append('rect')
-              .attr('class', 'skill-historical')
-              .attr('x', function(d) { return scales.skill(d.skilled[0]) })
-              .attr('y', function(d) { return scales.y(d.name) })
-              .attr('width', 3)
-              .attr('height', scales.y.rangeBand() + 6)
-
+          // svg.selectAll('.skill-historical')
+          //     .data(data)
+          //   .enter().append('rect')
+          //     .attr('class', 'skill-historical')
+          //     .attr('x', function(d) { return scales.y(d.name) - 3 })
+          //     .attr('y', function(d) { return scales.skill(d.skilled[0]) })
+          //     .attr('width', scales.y.rangeBand() + 6)
+          //     .attr('height', 3)
+          //
           svg.selectAll('.interest')
               .data(data)
             .enter().append('rect')
               .attr('class', 'interest')
-              .attr('x', function(d) { return scales.interest(d.interested[1]) })
-              .attr('y', function(d) { return scales.y(d.name) + 3 })
-              .attr('width', function(d) { return (width/2) - scales.interest(d.interested[1]) })
-              .attr('height', scales.y.rangeBand())
+              .attr('x', function(d) { return scales.y(d.name) })
+              .attr('y', function(d) { return scales.interest(d.interested[1]) })
+              .attr('width', function(d) { return scales.y.rangeBand() })
+              .attr('height', function(d) { return height/2 - scales.interest(d.interested[1]) })
+          //
+          // svg.selectAll('.interest-historical')
+          //     .data(data)
+          //   .enter().append('rect')
+          //     .attr('class', 'interest-historical')
+          //     .attr('x', function(d) { return scales.y(d.name) - 3 })
+          //     .attr('y', function(d) { return scales.interest(d.interested[0]) })
+          //     .attr('width', scales.y.rangeBand() + 6)
+          //     .attr('height', 3)
 
-          svg.selectAll('.interest-historical')
-              .data(data)
-            .enter().append('rect')
-              .attr('class', 'interest-historical')
-              .attr('x', function(d) { return scales.interest(d.interested[0]) })
-              .attr('y', function(d) { return scales.y(d.name) })
-              .attr('width', 3)
-              .attr('height', scales.y.rangeBand() + 6)
-
-          svg.selectAll('.skill.label')
-              .data(data)
-            .enter().append('text')
-              .attr('class', 'skill label')
-              .attr('x', function(d) { return scales.skill(d.skilled[1]) })
-              .attr('y', function(d) { return scales.y(d.name) + scales.y.rangeBand() + 16 })
-              .attr('dx', -2)
-              .text(function(d) { return d.skilled[1] })
-
-          svg.selectAll('.interest.label')
-              .data(data)
-            .enter().append('text')
-              .attr('class', 'interest label')
-              .attr('x', function(d) { return scales.interest(d.interested[1]) })
-              .attr('y', function(d) { return scales.y(d.name) + scales.y.rangeBand() + 16 })
-              .attr('dx', -2)
-              .text(function(d) { return d.interested[1] })
-
-          svg.selectAll('.skill.label.historical')
-              .data(data)
-            .enter().append('text')
-              .attr('class', 'skill label historical')
-              .attr('x', function(d) { return scales.skill(d.skilled[0]) })
-              .attr('y', function(d) { return scales.y(d.name) + scales.y.rangeBand() + 16 })
-              .attr('dx', -2)
-              .text(function(d) { return d.skilled[0] })
-
-          svg.selectAll('.interest.label.historical')
-              .data(data)
-            .enter().append('text')
-              .attr('class', 'interest label historical')
-              .attr('x', function(d) { return scales.interest(d.interested[0]) })
-              .attr('y', function(d) { return scales.y(d.name) + scales.y.rangeBand() + 16 })
-              .attr('dx', -2)
-              .text(function(d) { return d.interested[0] })
+          // svg.selectAll('.skill.label')
+          //     .data(data)
+          //   .enter().append('text')
+          //     .attr('class', 'skill label')
+          //     .attr('x', function(d) { return scales.skill(d.skilled[1]) })
+          //     .attr('y', function(d) { return scales.y(d.name) + scales.y.rangeBand() + 16 })
+          //     .attr('dx', -2)
+          //     .text(function(d) { return d.skilled[1] })
+          //
+          // svg.selectAll('.interest.label')
+          //     .data(data)
+          //   .enter().append('text')
+          //     .attr('class', 'interest label')
+          //     .attr('x', function(d) { return scales.interest(d.interested[1]) })
+          //     .attr('y', function(d) { return scales.y(d.name) + scales.y.rangeBand() + 16 })
+          //     .attr('dx', -2)
+          //     .text(function(d) { return d.interested[1] })
+          //
+          // svg.selectAll('.skill.label.historical')
+          //     .data(data)
+          //   .enter().append('text')
+          //     .attr('class', 'skill label historical')
+          //     .attr('x', function(d) { return scales.skill(d.skilled[0]) })
+          //     .attr('y', function(d) { return scales.y(d.name) + scales.y.rangeBand() + 16 })
+          //     .attr('dx', -2)
+          //     .text(function(d) { return d.skilled[0] })
+          //
+          // svg.selectAll('.interest.label.historical')
+          //     .data(data)
+          //   .enter().append('text')
+          //     .attr('class', 'interest label historical')
+          //     .attr('x', function(d) { return scales.interest(d.interested[0]) })
+          //     .attr('y', function(d) { return scales.y(d.name) + scales.y.rangeBand() + 16 })
+          //     .attr('dx', -2)
+          //     .text(function(d) { return d.interested[0] })
         }
 
         return {
