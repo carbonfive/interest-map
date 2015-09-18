@@ -139,6 +139,7 @@
         <button type='button' id='sort-interest'>Sort by interest</button>
         <button type='button' id='sort-skill'>Sort by skill</button>
         <button type='button' id='sort-ratio'>Sort by ratio</button>
+        <button type='button' id='sort-diff'>Sort by diff</button>
       </div>
     </div>
     <script>
@@ -196,31 +197,10 @@
           d3.select('#sort-interest').on('click', _sort(byInterest) )
           d3.select('#sort-skill').on('click',    _sort(bySkill) )
           d3.select('#sort-ratio').on('click',    _sort(byRatio) )
+          d3.select('#sort-diff').on('click',    _sort(byDiff) )
 
           _drawAxes(scales, cleanData)
           _drawBars(scales, cleanData)
-
-          function byInterest(a, b) {
-            var interested = a.interested[1] - b.interested[1]
-            return interested === 0 ? b.skilled[1] - a.skilled[1] : interested
-          }
-
-          function bySkill(a, b) {
-            var skilled = a.skilled[1] - b.skilled[1]
-            return skilled === 0 ? b.interested[1] - a.interested[1] : skilled
-          }
-
-          function byRatio(a, b) {
-            var r     = ratio(a) - ratio(b)
-              , edge  = r === 1 ? a.interested[1] - b.interested[1] : r
-              , final = edge === 0 ? b.skilled[1] - a.skilled[1] : edge
-
-            return final
-
-            function ratio(n) {
-              return n.interested[1] / (n.skilled[1]||0.0000001)
-            }
-          }
 
           function _sort(sortFn) {
             return function() {
@@ -245,13 +225,44 @@
           }
         }
 
+        function byInterest(a, b) {
+          var interested = a.interested[1] - b.interested[1]
+          return interested === 0 ? b.skilled[1] - a.skilled[1] : interested
+        }
+
+        function bySkill(a, b) {
+          var skilled = a.skilled[1] - b.skilled[1]
+          return skilled === 0 ? b.interested[1] - a.interested[1] : skilled
+        }
+
+        function byDiff(a, b) {
+          var diffA = a.skilled[1] - a.interested[1]
+            , diffB = b.skilled[1] - b.interested[1]
+            , diff = diffB - diffA
+
+          return diff === 0 ? b.skilled[1] - a.skilled[1] : diff
+        }
+
+        function byRatio(a, b) {
+          var r     = ratio(a) - ratio(b)
+            , edge  = r === 1 ? b.interested[1] - a.interested[1] : r
+            , final = edge === 0 ? b.skilled[1] - a.skilled[1] : edge
+
+          return final
+
+          function ratio(n) {
+            return (n.interested[1]+1) / ((n.skilled[1]||0.0000001) + 1)
+          }
+        }
+
         function _munge(data) {
-          data.sort(function(a, b) {
-            var interested = a.interested[1] - b.interested[1]
-            return interested === 0 ? b.skilled[1] - a.skilled[1] : interested
+          var cleanData = data.filter(function(d) {
+            return (d.skilled[1] != 0 || d.interested[1] != 0)
           })
 
-          return data;
+          cleanData.sort( byInterest )
+
+          return cleanData;
         }
 
         function _scales(data) {
